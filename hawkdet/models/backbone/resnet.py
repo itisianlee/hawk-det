@@ -1,10 +1,10 @@
 import torch
 from torch import Tensor
 import torch.nn as nn
-from .utils import load_state_dict_from_url
+from torch.utils.model_zoo import load_url as load_state_dict_from_url
 from typing import Type, Any, Callable, Union, List, Optional
 
-from hawkdet.models import backbone_registry
+from ..build import backbone_registry
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -300,8 +300,7 @@ def resnet50(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> 
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
-                   **kwargs)
+    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
 
 def resnet101(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
