@@ -62,7 +62,6 @@ class MultiBoxLoss(nn.Module):
         """
 
         loc_data, conf_data, landm_data = predictions
-        priors = priors
         num = loc_data.size(0)
         num_priors = (priors.size(0))
 
@@ -77,10 +76,13 @@ class MultiBoxLoss(nn.Module):
             defaults = priors.data
             match(self.threshold, truths, defaults, self.variance, labels, landms, loc_t, conf_t, landm_t, idx)
 
-        zeros = torch.tensor(0).cuda()
+        loc_t = loc_t.to(priors)
+        landm_t = landm_t.to(priors)
+        conf_t = conf_t.to(priors).to(dtype=torch.long)
+
         # landm Loss (Smooth L1)
         # Shape: [batch,num_priors,10]
-        pos1 = conf_t > zeros
+        pos1 = conf_t > 0
         num_pos_landm = pos1.long().sum(1, keepdim=True)
         N1 = max(num_pos_landm.data.sum().float(), 1)
         pos_idx1 = pos1.unsqueeze(pos1.dim()).expand_as(landm_data)
@@ -88,7 +90,7 @@ class MultiBoxLoss(nn.Module):
         landm_t = landm_t[pos_idx1].view(-1, 10)
         loss_landm = F.smooth_l1_loss(landm_p, landm_t, reduction='sum')
 
-        pos = conf_t != zeros
+        pos = conf_t != 0
         conf_t[pos] = 1
 
         # Localization Loss (Smooth L1)
