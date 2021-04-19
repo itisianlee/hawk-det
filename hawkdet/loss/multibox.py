@@ -100,6 +100,7 @@ class MultiBoxLoss(nn.Module):
         loc_t = loc_t[pos_idx].view(-1, 4)
         loss_l_ = F.smooth_l1_loss(loc_p, loc_t, reduction='sum')
 
+        # fix loc inf bug
         mask = torch.logical_not(torch.isinf(loss_l_))
         loss_l = torch.sum(torch.selected_index(loss_l_, mask))
 
