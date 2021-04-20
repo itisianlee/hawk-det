@@ -98,7 +98,10 @@ class MultiBoxLoss(nn.Module):
         pos_idx = pos.unsqueeze(pos.dim()).expand_as(loc_data)
         loc_p = loc_data[pos_idx].view(-1, 4)
         loc_t = loc_t[pos_idx].view(-1, 4)
-        loss_l = F.smooth_l1_loss(loc_p, loc_t, reduction='sum')
+
+        loss_l_ = F.smooth_l1_loss(loc_p, loc_t, reduction='none').sum(dim=1)
+        inf_mask = torch.logical_not(torch.isinf(loss_l_))
+        loss_l = torch.sum(loss_l_.masked_select(inf_mask))
 
         # Compute max conf across batch for hard negative mining
         batch_conf = conf_data.view(-1, self.num_classes)
