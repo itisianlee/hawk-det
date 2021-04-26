@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 import torch.backends.cudnn as cudnn
+import torch.nn.functional as F
 
 from configs.common import config as cfg
 from hawkdet.models.build import build_detor
@@ -105,6 +106,7 @@ def run(
 
         _t['forward_pass'].tic()
         loc, conf, landms = net(img)  # forward pass
+        conf = F.softmax(conf, dim=-1)
         _t['forward_pass'].toc()
         _t['misc'].tic()
         priors = PriorBox(cfg.min_sizes, cfg.steps, cfg.clip, image_size=(im_height, im_width)).forward()
