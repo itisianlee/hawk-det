@@ -61,8 +61,8 @@ class FPN(nn.Module):
         output1 = self.merge1(output1)
 
         output1 = self.cm1(output1)
-        output2 = self.cm1(output2)
-        output3 = self.cm1(output3)
+        output2 = self.cm2(output2)
+        output3 = self.cm3(output3)
 
         out = [output1, output2, output3]
         return out
