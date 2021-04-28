@@ -69,6 +69,6 @@ class FPN(nn.Module):
 
 
 @stem_registry.register()
-def fpn(in_channels, out_channels):
-    return FPN(in_channels, out_channels)
+def fpn(in_channels, out_channels, context_module=None):
+    return FPN(in_channels, out_channels, context_module)
     
