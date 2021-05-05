@@ -33,17 +33,17 @@ class FPN(nn.Module):
         if (out_channels <= 64):
             leaky = 0.1
         in_channels_list = [in_channels * r for r in [2, 4, 8]]
-        self.output1 = conv_bn1X1(in_channels_list[0], out_channels, stride = 1, leaky = leaky)
-        self.output2 = conv_bn1X1(in_channels_list[1], out_channels, stride = 1, leaky = leaky)
-        self.output3 = conv_bn1X1(in_channels_list[2], out_channels, stride = 1, leaky = leaky)
+        self.output1 = conv_bn1X1(in_channels_list[0], out_channels, stride=1, leaky=leaky)
+        self.output2 = conv_bn1X1(in_channels_list[1], out_channels, stride=1, leaky=leaky)
+        self.output3 = conv_bn1X1(in_channels_list[2], out_channels, stride=1, leaky=leaky)
         
         Context = context_module_dict.get(context_module, nn.Identity)
         self.cm1 = Context(out_channels, out_channels)
         self.cm2 = Context(out_channels, out_channels)
         self.cm3 = Context(out_channels, out_channels)
 
-        self.merge1 = conv_bn(out_channels, out_channels, leaky = leaky)
-        self.merge2 = conv_bn(out_channels, out_channels, leaky = leaky)
+        self.merge1 = conv_bn(out_channels, out_channels, leaky=leaky)
+        self.merge2 = conv_bn(out_channels, out_channels, leaky=leaky)
 
     def forward(self, input):
         input = list(input.values())
