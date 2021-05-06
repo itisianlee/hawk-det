@@ -16,7 +16,7 @@ class Retinahead(nn.Module):
 
     def forward(self, fpn_out):
         bbox_out = torch.cat([self.bbox[i](feature) for i, feature in enumerate(fpn_out)], dim=1)
-        cls_out = torch.cat([self.cls[i](feature) for i, feature in enumerate(fpn_out)],dim=1)
+        cls_out = torch.cat([self.cls[i](feature) for i, feature in enumerate(fpn_out)], dim=1)
         lmk_out = torch.cat([self.lmk[i](feature) for i, feature in enumerate(fpn_out)], dim=1)
         return bbox_out, cls_out, lmk_out
 

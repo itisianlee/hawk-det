@@ -27,10 +27,10 @@ class SSH(nn.Module):
             leaky = 0.1
         self.conv3X3 = conv_bn_no_relu(in_channel, out_channel//2, stride=1)
 
-        self.conv5X5_1 = conv_bn(in_channel, out_channel//4, stride=1, leaky = leaky)
+        self.conv5X5_1 = conv_bn(in_channel, out_channel//4, stride=1, leaky=leaky)
         self.conv5X5_2 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
 
-        self.conv7X7_2 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky = leaky)
+        self.conv7X7_2 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky=leaky)
         self.conv7x7_3 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
 
     def forward(self, input):
