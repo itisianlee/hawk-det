@@ -28,8 +28,8 @@ from ignite.utils import manual_seed, setup_logger
 def run(
     seed=2021,
     lr=1e-3,
-    batch_size=24,
-    max_epoch=100,
+    batch_size=32,
+    max_epoch=250,
     num_workers=4,
     output_path='det-outputs',
     log_every_iters=10,
