@@ -177,7 +177,10 @@ def create_trainer(model, optimizer, criterion, priors, lr_scheduler, train_samp
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-        # logger.info(optimizer.param_groups[0]['lr'])
+        if engine.state.iteration % 10 == 0:
+            log_str = 'iter: {}, loc: {:.4f}, cls: {:.4f}, lmk: {:.4f}'.format(
+                engine.state.iteration, loss_l.item(), loss_c.item(), loss_lmk.item())
+            logger.info(log_str)
         return {
             "batch loss": loss.item(),
             "loc loss": loss_l.item(),
