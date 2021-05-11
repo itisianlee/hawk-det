@@ -81,9 +81,6 @@ def training(local_rank, cfg):
     trainer = create_trainer(net, optimizer, criterion, priors, lr_scheduler, train_loader.sampler, cfg, logger)
 
     # Let's now setup evaluator engine to perform model's validation and compute metrics
-    # metrics = {
-    #     "mAP": Loss(criterion),
-    # }
 
     if rank == 0:
         # Setup TensorBoard logging on trainer and evaluators. Logged values are:
