@@ -13,14 +13,14 @@ C.steps = [8, 16, 32]
 C.variance = [0.1, 0.2]
 C.loc_lambda = 2.0
 C.clip = False
-C.output_path = 'det-outputs'
+C.output_path = 'logs'
 C.checkpoint_every = 5
 C.milestones = [190, 220]  # epoch
 
 C.Dataset = CN()
 C.Dataset.name = 'WiderFace'
 C.Dataset.image_size = (640, 640)
-C.Dataset.label_file = '/root/paddlejob/workspace/hawk-facedet/data/widerface/train/label.txt'
+C.Dataset.label_file = '/root/paddlejob/workspace/hawk-det/widerface/train/label.txt'
 C.Dataset.image_mean = (104, 117, 123)  # bgr order
 # C.Dataset.image_mean = [104, 111, 120]  # bgr order
 C.Dataset.image_std = [13.28474724, 12.9287223, 13.38387188]
@@ -32,7 +32,7 @@ C.Detector.params.backbone_return_layers = ['stage1', 'stage2', 'stage3']
 C.Detector.Backbone = CN()
 C.Detector.Backbone.name = 'mobilenetv1_0x25'
 C.Detector.Backbone.params = CN()
-C.Detector.Backbone.params.pretrained_model = 'mobilenetV1X0.25_pretrain.tar'
+C.Detector.Backbone.params.pretrained_model = 'model_zoo/mobilenetV1X0.25_pretrain.tar'
 # C.Detector.Backbone.params.pretrained = True
 C.Detector.Backbone.params.progress = True
 
