@@ -10,13 +10,18 @@ class RandomCrop:
         self.image_size = image_size
         self.iof_factor = iof_factor  # iof(IoF(forgrand))
         self.min_face = min_face
+        self.pre_scales = [0.3, 0.45, 0.6, 0.8, 1.0]
         
-    def __call__(self, img, bboxes, labels, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
+        bboxes = item.get('bboxes')
+        labels = item.get('labels')
+        lmks = item.get('landmarks', None)
+    
         img_h, img_w, _ = img.shape
 
         for _ in range(250):
-            PRE_SCALES = [0.3, 0.45, 0.6, 0.8, 1.0]
-            scale = random.choice(PRE_SCALES)
+            scale = random.choice(self.pre_scales)
             short_side = min(img_h, img_w)
             side_len = int(scale * short_side)
 
@@ -63,12 +68,24 @@ class RandomCrop:
             if bboxes_t.shape[0] == 0:
                 continue
 
-            return img_t, bboxes_t, labels_t, lmks_t
-        return img, bboxes, labels, lmks
+            return {
+                'image': img_t,
+                'bboxes': bboxes_t,
+                'labels': labels_t,
+                'landmarks': lmks_t
+            }
+        return {
+                'image': img,
+                'bboxes': bboxes,
+                'labels': labels,
+                'landmarks': lmks
+            }
 
 
 class RandomDistort:
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
+
         def _convert(image, alpha=1, beta=0):
             tmp = image.astype(float) * alpha + beta
             tmp[tmp < 0] = 0
@@ -122,30 +139,37 @@ class RandomDistort:
             #contrast distortion
             if random.randrange(2):
                 _convert(image, alpha=random.uniform(0.5, 1.5))
-
-        return image, bboxes, labels, lmks
+        item['image'] = image
+        return item
 
 
 class Pad:
     def __init__(self, img_mean=[104, 111, 120]):
         self.img_mean = img_mean
 
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
         height, width, _ = img.shape
         if height == width:
-            return img, bboxes, labels, lmks
+            return item
+
         long_side = max(width, height)
         image_t = np.empty((long_side, long_side, 3), dtype=img.dtype)
         image_t[:, :] = self.img_mean
         image_t[0:0 + height, 0:0 + width] = img
-        return image_t, bboxes, labels, lmks
+        item['image'] = img
+        return item
 
 
 class RandomFlip:
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
+        bboxes = item.get('bboxes')
+        lmks = item.get('landmarks', None)
+
         _, width, _ = img.shape
         if random.randrange(2):
-            img = img[:, ::-1]
+            img = cv2.flip(img, 1)
             bboxes = bboxes.copy()
             bboxes[:, 0::2] = width - bboxes[:, 2::-2]
 
@@ -160,39 +184,49 @@ class RandomFlip:
             lmks[:, 4, :] = lmks[:, 3, :]
             lmks[:, 3, :] = tmp1
             lmks = lmks.reshape([-1, 10])
-
-        return img, bboxes, labels, lmks
+            item['image'] = img
+            item['bboxes'] = bboxes
+            item['landmarks'] = lmks
+            
+        return item
 
 
 class Resize:
     def __init__(self, image_size=(640, 640)):
         self.image_size = image_size
 
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
         interp_methods = [cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_NEAREST, cv2.INTER_LANCZOS4]
         interp_method = interp_methods[random.randrange(5)]
         img = cv2.resize(img, self.image_size, interpolation=interp_method)
         img = img.astype(np.float32)
-        return img, bboxes, labels, lmks
+        item['image'] = img.astype(np.float32)
+        return item
 
 
 class Coord2Norm:
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
+        bboxes = item.get('bboxes')
+        lmks = item.get('landmarks', None)
         height, width, _ = img.shape
         bboxes[:, 0::2] /= width
         bboxes[:, 1::2] /= height
 
         lmks[:, 0::2] /= width
         lmks[:, 1::2] /= height
-        return img, bboxes, labels, lmks
+        item['bboxes'] = bboxes
+        item['landmarks'] = lmks
+        return item
 
 
 class ImageT:
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
         img = img.transpose(2, 0, 1)
-        # labels = np.expand_dims(labels, 1)
-
-        return img, bboxes, labels, lmks
+        item['image'] = img
+        return item
 
 
 class Normalize:
@@ -200,19 +234,21 @@ class Normalize:
         self.image_mean = image_mean
         self.image_std = image_std
     
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
+        img = item.get('image')
         img = (img - self.image_mean) / self.image_std
-        return img, bboxes, labels, lmks
+        item['image'] = img
+        return item
 
 
 class Compose:
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, img, bboxes=None, labels=None, lmks=None):
+    def __call__(self, item):
         for t in self.transforms:
-            img, bboxes, labels, lmks = t(img, bboxes, labels, lmks)
-        return img, bboxes, labels, lmks
+            item = t(item)
+        return item
 
 
 def build_transform(image_size, image_mean, image_std, iof_factor=1.0, min_face=16):
