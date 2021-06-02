@@ -32,6 +32,7 @@ class WiderFace(Dataset):
                 self.imgs_path.append(path)
             else:
                 label = [float(x) for x in line.split(' ')]
+                # format: xyxy
                 anno = [
                     label[0], label[1], label[0] + label[2], label[1] + label[3],
                     label[4], label[5], label[7], label[8], label[10], label[11],
