@@ -192,16 +192,37 @@ class RandomFlip:
 
 
 class Resize:
-    def __init__(self, image_size=(640, 640)):
+    def __init__(self, image_size=(640, 640)):  # h, w
         self.image_size = image_size
+
+    def box_resize(self, img_h, img_w, bboxes=None):
+        scale_x = self.image_size[1] / img_w
+        scale_y = self.image_size[0] / img_h
+        print(scale_x, scale_y)
+        if bboxes is not None:
+            bboxes *= [scale_x, scale_y, scale_x, scale_y]
+        return bboxes
+
+    def lmk_resize(self, img_h, img_w, lmks=None):
+        scale_x = self.image_size[1] / img_w
+        scale_y = self.image_size[0] / img_h
+        if lmks is not None:
+            lmks *= ([scale_x, scale_y]*5)
+        return lmks
 
     def __call__(self, item):
         img = item.get('image')
+        bboxes = item.get('bboxes')
+        lmks = item.get('landmarks', None)
+        ori_h, ori_w, _ = img.shape
+
         interp_methods = [cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_NEAREST, cv2.INTER_LANCZOS4]
         interp_method = interp_methods[random.randrange(5)]
-        img = cv2.resize(img, self.image_size, interpolation=interp_method)
-        img = img.astype(np.float32)
-        item['image'] = img.astype(np.float32)
+        img = cv2.resize(img, self.image_size[::-1], interpolation=interp_method)
+
+        item['image'] = img.astype(np.uint8)
+        item['bboxes'] = self.box_resize(ori_h, ori_w, bboxes)
+        item['landmarks'] = self.lmk_resize(ori_h, ori_w, lmks)
         return item
 
 
