@@ -226,22 +226,6 @@ class Resize:
         return item
 
 
-class Coord2Norm:
-    def __call__(self, item):
-        img = item.get('image')
-        bboxes = item.get('bboxes')
-        lmks = item.get('landmarks', None)
-        height, width, _ = img.shape
-        bboxes[:, 0::2] /= width
-        bboxes[:, 1::2] /= height
-
-        lmks[:, 0::2] /= width
-        lmks[:, 1::2] /= height
-        item['bboxes'] = bboxes
-        item['landmarks'] = lmks
-        return item
-
-
 class ImageT:
     def __call__(self, item):
         img = item.get('image')
