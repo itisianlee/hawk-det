@@ -198,7 +198,6 @@ class Resize:
     def box_resize(self, img_h, img_w, bboxes=None):
         scale_x = self.image_size[1] / img_w
         scale_y = self.image_size[0] / img_h
-        print(scale_x, scale_y)
         if bboxes is not None:
             bboxes *= [scale_x, scale_y, scale_x, scale_y]
         return bboxes
@@ -256,10 +255,14 @@ class Compose:
         return item
 
 
-def build_transform(image_size, image_mean, image_std, iof_factor=1.0, min_face=16):
+def build_transforms(image_size, image_mean, image_std, iof_factor=1.0, min_face=16):
     transforms = Compose([
-        RandomCrop(image_size, iof_factor, min_face), 
-        RandomDistort(), Pad(image_mean), RandomFlip(), Normalize(image_mean, image_std),
-        Coord2Norm(), Resize(image_size), ImageT()
+        RandomCrop(image_size, iof_factor, min_face),
+        RandomDistort(),
+        Pad(image_mean),
+        RandomFlip(),
+        Normalize(image_mean, image_std),
+        Resize(image_size),
+        ImageT(),
     ])
     return transforms
