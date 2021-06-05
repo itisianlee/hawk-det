@@ -1,5 +1,3 @@
-import os
-import sys
 import cv2
 import numpy as np
 import torch
@@ -63,31 +61,22 @@ class WiderFace(Dataset):
         return item
 
 
-def detection_collate(batch):
-    """Custom collate fn for dealing with batches of images that have a different
-    number of associated object annotations (bounding boxes).
-
-    Arguments:
-        batch: (tuple) A tuple of tensor images and lists of annotations
-
-    Return:
-        A tuple containing:
-            1) (tensor) batch of images stacked on their 0 dim
-            2) (list of tensors) annotations for a given image are stacked on 0 dim
-    """
+def collater(batch_samples):
     bboxes = []
     labels = []
     lmks = []
     imgs = []
-    for sample in batch:
-        img, bbox, label, lmk = sample
-        imgs.append(torch.from_numpy(img))
+    for sample in batch_samples:
+        single_img = sample['image']
+        single_bboxes = sample['bboxes']
+        single_labels = sample['labels']
+        single_lmks = sample['landmarks']
 
-        bbox = torch.from_numpy(bbox).float()
-        lmk = torch.from_numpy(lmk).float()
-        label = torch.from_numpy(label).float()
-        bboxes.append(bbox)
-        labels.append(label)
-        lmks.append(lmk)
+        imgs.append(single_img)
 
-    return (torch.stack(imgs, 0), bboxes, labels, lmks)
+        bboxes.append(torch.from_numpy(single_bboxes).float())
+        labels.append(torch.from_numpy(single_lmks).float())
+        lmks.append(torch.from_numpy(single_labels).float())
+        
+
+    return {'images': torch.from_numpy(np.array(imgs)), 'bboxes': bboxes, 'landmarks': lmks, 'labels': labels}
