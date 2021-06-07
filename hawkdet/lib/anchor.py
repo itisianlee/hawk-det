@@ -8,19 +8,17 @@ class Anchors(nn.Module):
         super(Anchors, self).__init__()
 
         if pyramid_levels is None:
-            self.pyramid_levels = [3, 4, 5, 6, 7]
+            self.pyramid_levels = [3, 4, 5]
         if strides is None:
             self.strides = [2 ** x for x in self.pyramid_levels]
         if sizes is None:
-            self.sizes = [2 ** (x + 2) for x in self.pyramid_levels]
+            self.sizes = [2 ** (x + 1 + i) for i, x in enumerate(self.pyramid_levels)]
         if ratios is None:
-            self.ratios = np.array([0.5, 1, 2])
+            self.ratios = np.array([1])
         if scales is None:
-            self.scales = np.array([2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
+            self.scales = np.array([1, 2])
 
-    def forward(self, image):
-        
-        image_shape = image.shape[2:]
+    def forward(self, image_shape):
         image_shape = np.array(image_shape)
         image_shapes = [(image_shape + 2 ** x - 1) // (2 ** x) for x in self.pyramid_levels]
 
@@ -38,6 +36,7 @@ class Anchors(nn.Module):
             return torch.from_numpy(all_anchors.astype(np.float32)).cuda()
         else:
             return torch.from_numpy(all_anchors.astype(np.float32))
+
 
 def generate_anchors(base_size=16, ratios=None, scales=None):
     """
@@ -71,6 +70,7 @@ def generate_anchors(base_size=16, ratios=None, scales=None):
     anchors[:, 1::2] -= np.tile(anchors[:, 3] * 0.5, (2, 1)).T
 
     return anchors
+
 
 def compute_shape(image_shape, pyramid_levels):
     """Compute shapes based on pyramid levels.
