@@ -7,10 +7,13 @@ from itertools import product as product
 class PriorBox(object):
     def __init__(self, min_sizes, steps, clip, image_size=(640, 640)):
         super(PriorBox, self).__init__()
+        # C.min_sizes = [[16, 32], [64, 128], [256, 512]]
+        # C.steps = [8, 16, 32]
         self.min_sizes = min_sizes
         self.steps = steps
         self.clip = clip
         self.image_size = image_size
+                               # 80, 40, 20
         self.feature_maps = [[ceil(self.image_size[0]/step), ceil(self.image_size[1]/step)] for step in self.steps]
         self.name = "s"
 
