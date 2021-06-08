@@ -26,16 +26,11 @@ class Anchors(nn.Module):
         all_anchors = np.zeros((0, 4)).astype(np.float32)
 
         for idx, p in enumerate(self.pyramid_levels):
-            anchors         = generate_anchors(base_size=self.sizes[idx], ratios=self.ratios, scales=self.scales)
+            anchors = generate_anchors(base_size=self.sizes[idx], ratios=self.ratios, scales=self.scales)
             shifted_anchors = shift(image_shapes[idx], self.strides[idx], anchors)
-            all_anchors     = np.append(all_anchors, shifted_anchors, axis=0)
+            all_anchors = np.append(all_anchors, shifted_anchors, axis=0)
 
-        all_anchors = np.expand_dims(all_anchors, axis=0)
-
-        if torch.cuda.is_available():
-            return torch.from_numpy(all_anchors.astype(np.float32)).cuda()
-        else:
-            return torch.from_numpy(all_anchors.astype(np.float32))
+        return torch.from_numpy(all_anchors.astype(np.float32))
 
 
 def generate_anchors(base_size=16, ratios=None, scales=None):
