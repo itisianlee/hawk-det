@@ -50,24 +50,24 @@ class MultiTask(AnchorLoss):
         lmk_t[idx] = landm
 
     def forward(self, predictions, anchors, annotations):
-        loc_preds, conf_preds, lmk_preds = predictions
-        batch_size = loc_preds.size(0)
-        anchor_num = anchors.size(0)
+        # loc_preds, conf_preds, lmk_preds = predictions
+        # batch_size = loc_preds.size(0)
+        # anchor_num = anchors.size(0)
 
-        bboxes = annotations['bboxes']
-        lmks = annotations['landmarks'] 
-        labels  = annotations['labels']
+        # bboxes = annotations['bboxes']
+        # lmks = annotations['landmarks'] 
+        # labels  = annotations['labels']
 
-        # match priors (default boxes) and ground truth boxes
-        loc_t = torch.Tensor(batch_size, anchor_num, 4)
-        lmk_t = torch.Tensor(batch_size, anchor_num, 10)
-        conf_t = torch.LongTensor(batch_size, anchor_num)
-        for idx in range(batch_size):
-            single_bboxes = bboxes[idx]
-            single_lmks = lmks[idx]
-            single_labels = labels[idx]
-            self.match(single_bboxes, anchors, single_labels, single_lmks, 
-                  loc_t, 
-                  conf_t, 
-                  lmk_t, 
-                  idx)
+        # # match priors (default boxes) and ground truth boxes
+        # loc_t = torch.Tensor(batch_size, anchor_num, 4)
+        # lmk_t = torch.Tensor(batch_size, anchor_num, 10)
+        # conf_t = torch.LongTensor(batch_size, anchor_num)
+        # for idx in range(batch_size):
+        #     single_bboxes = bboxes[idx]
+        #     single_lmks = lmks[idx]
+        #     single_labels = labels[idx]
+        #     self.match(single_bboxes, anchors, single_labels, single_lmks, 
+        #           loc_t, 
+        #           conf_t, 
+        #           lmk_t, 
+        #           idx)
