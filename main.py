@@ -1,15 +1,16 @@
 import fire
 import torch
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.cuda.amp import GradScaler, autocast
 
 from configs.common import config
 from hawkdet.utils.yacs import CfgNode as CN
 from hawkdet.models.build import build_detor
-from hawkdet.dataset import WiderFace, detection_collate, preproc
-from hawkdet.lib.prior_box import PriorBox
-from hawkdet.loss import MultiBoxLoss
+from hawkdet.dataset import WiderFace, collater
+from hawkdet.dataset.transformers import Compose, RandomCrop, RandomDistort, Pad, RandomFlip, Resize, Normalize, ImageT
+from hawkdet.torchlib import Anchors
+from hawkdet.loss import MultiTask
 
 from pathlib import Path
 from datetime import datetime
@@ -18,7 +19,6 @@ import ignite
 import ignite.distributed as idist
 from ignite.contrib.engines import common
 from ignite.contrib.handlers import PiecewiseLinear, LRScheduler
-from torch.optim.lr_scheduler import MultiStepLR
 from ignite.engine import Engine, Events
 from ignite.handlers import Checkpoint, DiskSaver, global_step_from_engine
 from ignite.metrics import Accuracy, Loss
@@ -75,10 +75,10 @@ def training(local_rank, cfg):
     cfg.checkpoint_every *= cfg["num_iters_per_epoch"]
     log_basic_info(logger, cfg)
 
-    net, optimizer, criterion, lr_scheduler, priors = net_init(cfg)
+    net, optimizer, criterion, lr_scheduler, anchors = net_init(cfg)
 
     # Create trainer for current task
-    trainer = create_trainer(net, optimizer, criterion, priors, lr_scheduler, train_loader.sampler, cfg, logger)
+    trainer = create_trainer(net, optimizer, criterion, anchors, lr_scheduler, train_loader.sampler, cfg, logger)
 
     # Let's now setup evaluator engine to perform model's validation and compute metrics
 
@@ -127,20 +127,21 @@ def net_init(cfg):
                           nesterov=False)
     optimizer = idist.auto_optim(optimizer)
 
-    criterion = MultiBoxLoss(cfg.num_classes, 0.35, True, 0, True, 7, 0.35, False)
+    criterion = MultiTask(num_classes=2, overlap_threshold=0.35, neg_pos_ratio=7, variance=[0.1, 0.2])
     criterion = criterion.to(idist.device())
     with torch.no_grad():
-        priors = PriorBox(cfg.min_sizes, cfg.steps, cfg.clip, image_size=cfg.Dataset.image_size).forward()
-        priors = priors.to(idist.device())
+        make_anchors = Anchors()
+        anchors = make_anchors(cfg.Dataset.image_size)
+        anchors = anchors.to(idist.device())
 
     milestones = [cfg.num_iters_per_epoch * e for e in cfg.milestones]
     step_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
     lr_scheduler = LRScheduler(step_scheduler)
 
-    return net, optimizer, criterion, lr_scheduler, priors
+    return net, optimizer, criterion, lr_scheduler, anchors
 
 
-def create_trainer(model, optimizer, criterion, priors, lr_scheduler, train_sampler, cfg, logger):
+def create_trainer(model, optimizer, criterion, anchors, lr_scheduler, train_sampler, cfg, logger):
 
     device = idist.device()
 
@@ -158,16 +159,22 @@ def create_trainer(model, optimizer, criterion, priors, lr_scheduler, train_samp
 
     def train_step(engine, batch):
 
-        images, targets = batch[0], batch[1]
+        images = batch['images']
+        bboxes = batch['bboxes']
+        lmks = batch['landmarks']
+        labels = batch['labels']
+
         if images.device != device:
             images = images.to(device, non_blocking=True)
-            targets = [anno.to(device, non_blocking=True) for anno in targets]
+            bboxes = [sin_bboxes.to(device, non_blocking=True) for sin_bboxes in bboxes]
+            lmks = [sin_lmks.to(device, non_blocking=True) for sin_lmks in lmks]
+            labels = [sin_labels.to(device, non_blocking=True) for sin_labels in labels]
 
         model.train()
 
         with autocast(enabled=with_amp):
             out = model(images)
-            loss_l, loss_c, loss_lmk = criterion(out, priors, targets)
+            loss_l, loss_c, loss_lmk = criterion(out, anchors, bboxes, labels, lmks)
             loss = cfg.loc_lambda * loss_l + loss_c + loss_lmk
 
         optimizer.zero_grad()
@@ -219,7 +226,16 @@ def get_dataflow(cfg):
         # Ensure that only rank 0 download the dataset
         idist.barrier()
 
-    train_dataset = WiderFace(cfg.Dataset.label_file, preproc(cfg.Dataset.image_size[0], cfg.Dataset.image_mean))
+    trans = Compose([
+        RandomCrop(image_size=cfg.Dataset.image_size),
+        RandomDistort(),
+        Pad(img_mean=cfg.Dataset.image_mean),
+        RandomFlip(),
+        Normalize(image_mean=cfg.Dataset.image_mean, image_std=cfg.Dataset.image_std),
+        Resize(cfg.Dataset.image_size),
+        ImageT(),
+    ])
+    train_dataset = WiderFace(cfg.Dataset.label_file, transforms=trans)
 
     # Setup data loader also adapted to distributed config: nccl, gloo, xla-tpu
     train_loader = idist.auto_dataloader(train_dataset, 
@@ -227,7 +243,7 @@ def get_dataflow(cfg):
                                          num_workers=cfg.num_workers, 
                                          shuffle=True, 
                                          drop_last=True,
-                                         collate_fn=detection_collate)
+                                         collate_fn=collater)
 
     # test_loader = idist.auto_dataloader(
     #     test_dataset, batch_size=2 * config["batch_size"], num_workers=config["num_workers"], shuffle=False,
