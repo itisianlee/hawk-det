@@ -11,10 +11,12 @@ def bbox_vis(img, bboxes, color='r', thickness=2, format='xywh'):
     assert format in ['xywh', 'xyxy']
     assert color in ['r', 'b', 'g']
     assert isinstance(bboxes, (np.ndarray, list))
-    bboxes = np.array(bboxes, dtype=np.int)
+    bboxes = np.array(bboxes)
     assert bboxes.ndim == 2 and bboxes.shape[1] == 4
     if format == 'xywh':
+        bboxes[:, :2] -= bboxes[:, 2:] / 2
         bboxes[:, 2:] += bboxes[:, :2]
+    bboxes = bboxes.astype(np.int)
     
     for b in bboxes:
         cv2.rectangle(img, (b[0], b[1]), (b[2], b[3]), color_dict[color], thickness)
