@@ -23,7 +23,8 @@ C.Dataset.image_size = (640, 640)
 C.Dataset.label_file = '/root/paddlejob/workspace/hawk-det/widerface/train/label.txt'
 C.Dataset.image_mean = (104, 117, 123)  # bgr order
 # C.Dataset.image_mean = [104, 111, 120]  # bgr order
-C.Dataset.image_std = [13.28474724, 12.9287223, 13.38387188]
+# C.Dataset.image_std = [13.28474724, 12.9287223, 13.38387188]
+C.Dataset.image_std = [1.0, 1.0, 1.0]
 
 C.Detector = CN()
 C.Detector.name = 'retinaface'
