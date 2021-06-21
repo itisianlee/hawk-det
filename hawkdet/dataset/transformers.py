@@ -229,6 +229,7 @@ class ImageT:
     def __call__(self, item):
         img = item.get('image')
         img = img.transpose(2, 0, 1)
+        img = img.astype(np.float32)
         item['image'] = img
         return item
 
